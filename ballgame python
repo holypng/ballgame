@@ -1,0 +1,330 @@
+import random
+import colorama
+from colorama import Fore, Back, Style
+
+colorama.init()
+
+class ShadowClone:
+    def __init__(self):
+        self.health = 3
+        self.damage_multiplier = 0.5  
+      
+    def take_damage(self, damage):
+        self.health -= damage
+        if self.health <= 0:
+            print(Fore.GRAY + "Your Shadow Clone has faded!" + Style.RESET_ALL)
+
+    def attack(self, player_damage):
+        return int(player_damage * self.damage_multiplier)
+
+def get_player_move(player_ball):
+  moves = ["attack", "guard"]
+  if player_ball == "blue":
+    moves.append("parry")
+    special_move = "parry"
+  elif player_ball == "green":
+    moves.append("heal")
+    special_move = "heal"
+  elif player_ball == "red":
+    moves.append("enrage")
+    special_move = "enrage"
+  elif player_ball == "orange":
+    moves.append("detonate")
+    special_move = "detonate"
+  elif player_ball == "purple":
+    moves.append("swap")
+    special_move = "swap"
+  elif player_ball == "gray":
+    moves.append("shadow")
+    special_move = "shadow"
+  print(f"Your special move is: {special_move}")
+  while True:
+    move = input("Choose your move (attack, guard, [special move]): ").lower()
+    if move in moves:
+      return move
+    else:
+      print(f"Invalid move. Please choose from: {moves}")
+
+def detonate_explosive(opponent_health):
+  """Detonates the explosive, halving the opponent's health."""
+  opponent_health //= 2  
+  print(Fore.YELLOW + "BOOM! The explosive detonates!" + Style.RESET_ALL)
+  return opponent_health
+
+def get_opponent_move(opponent_ball, player_ball):  
+  moves = ["attack", "guard"]
+  if opponent_ball == "blue":
+    moves.append("parry")
+  elif opponent_ball == "green":
+    moves.append("heal")
+  elif opponent_ball == "red":
+    moves.append("enrage")
+  elif opponent_ball == "orange":
+    moves.append("detonate")
+  
+  if opponent_ball == "purple" and player_ball != "purple": 
+    moves.append("swap")
+  return random.choice(moves)
+
+# Function to calculate damage dealt
+def calculate_damage(attacker_move, defender_move, attacker_ball, attacker_enraged, shadow_clone=None):
+  damage = 0
+  if attacker_move == "attack" and defender_move == "guard":
+    damage = 0
+  elif attacker_move == "attack" and defender_move == "parry":
+    damage = 2 if attacker_enraged else 1  # Enraged parry does 2 damage
+  elif attacker_move == "attack" and defender_move != "guard" and defender_move != "parry":
+    damage = 1 if attacker_enraged else 1  # Enraged attack does 1 damage
+  if shadow_clone:
+    damage = shadow_clone.attack(damage)
+  return damage
+
+# Main game loop
+def play_game():
+  player_health = 10
+  opponent_health = 10
+  balls = ["blue", "green", "red", "orange", "purple", "gray"] 
+  player_ball = input("Choose your ball (blue, green, red, orange, purple, gray): ").lower()
+  while player_ball not in balls:
+    player_ball = input("Invalid choice. Choose your ball (blue, green, red, orange, purple, gray): ").lower()
+
+  opponent_ball = random.choice(balls)
+  print(f"Opponent chose {opponent_ball} ball.")
+  player_enraged = False
+  opponent_enraged = False
+  enrage_timer = 0  
+  explosive_planted = False  
+  shadow_clone = None
+  shadow_clone_health = None
+  damage_to_transfer = None
+
+  # First opponent
+  for round_num in range(1, 21):
+    print(f"\nRound {round_num}")
+    print(f"Your health: {player_health}")
+    print(f"Opponent health: {opponent_health}")
+    if shadow_clone_health is not None:
+      print(f"Shadow Clone health: {shadow_clone_health}")
+
+    # Player's turn
+    player_move = get_player_move(player_ball)
+
+    if player_ball == "blue":
+      print(Fore.BLUE + f"You chose {player_move}" + Style.RESET_ALL)
+    elif player_ball == "green":
+      print(Fore.GREEN + f"You chose {player_move}" + Style.RESET_ALL)
+    elif player_ball == "red":
+      print(Fore.RED + f"You chose {player_move}" + Style.RESET_ALL)
+    elif player_ball == "orange":
+      print(Fore.YELLOW + f"You chose {player_move}" + Style.RESET_ALL)
+    elif player_ball == "purple":
+      print(Fore.MAGENTA + f"You chose {player_move}" + Style.RESET_ALL)
+    elif player_ball == "gray":
+      print(Fore.LIGHTBLACK_EX + f"You chose {player_move}" + Style.RESET_ALL)
+
+    opponent_move = get_opponent_move(opponent_ball, player_ball)  # Pass player_ball to the function
+
+    if opponent_ball == "blue":
+      print(Fore.BLUE + f"Opponent chose {opponent_move}" + Style.RESET_ALL)
+    elif opponent_ball == "green":
+      print(Fore.GREEN + f"Opponent chose {opponent_move}" + Style.RESET_ALL)
+    elif opponent_ball == "red":
+      print(Fore.RED + f"Opponent chose {opponent_move}" + Style.RESET_ALL)
+    elif opponent_ball == "orange":
+      print(Fore.YELLOW + f"Opponent chose {opponent_move}" + Style.RESET_ALL)
+    elif opponent_ball == "purple":
+      print(Fore.MAGENTA + f"Opponent chose {opponent_move}" + Style.RESET_ALL)
+    elif opponent_ball == "gray":
+      print(Fore.LIGHTBLACK_EX + f"Opponent chose {opponent_move}" + Style.RESET_ALL)
+
+    player_damage = calculate_damage(player_move, opponent_move, player_ball, player_enraged, shadow_clone)
+    opponent_damage = calculate_damage(opponent_move, player_move, opponent_ball, opponent_enraged)
+
+    
+    if player_move == "parry" and opponent_move == "attack":
+      opponent_health -= opponent_damage
+      print("You parried the attack and the opponent damaged themselves!")
+    elif opponent_move == "parry" and player_move == "attack":
+      player_health -= player_damage
+      print("Opponent parried your attack and you damaged yourself!")
+    elif player_move == "heal" and player_health < 10:
+      player_health += 1
+      print("You healed yourself!")
+    elif opponent_move == "heal" and opponent_health < 10:
+      opponent_health += 1
+      print("Opponent healed themselves!")
+    elif player_move == "enrage":
+      player_enraged = True
+      player_health -= 1
+      print("You are enraged!")
+      enrage_timer = 2  # Reset enrage timer
+    elif opponent_move == "enrage":
+      opponent_enraged = True
+      opponent_health -= 1
+      print("Opponent is enraged!")
+      enrage_timer = 2  # Reset enrage timer
+    elif player_move == "detonate" and player_ball == "orange":  # Plant the explosive
+      explosive_planted = True
+      print(Fore.YELLOW + "You planted the detonatable explosive!" + Style.RESET_ALL)
+    elif opponent_move == "detonate" and opponent_ball == "orange":
+      explosive_planted = True
+      print(Fore.YELLOW + "Opponent planted a detonatable explosive!" + Style.RESET_ALL)
+    elif player_move == "swap" and player_ball == "purple":  # Swap balls
+      temp_ball = player_ball
+      player_ball = opponent_ball
+      opponent_ball = temp_ball
+      print(Fore.MAGENTA + "You swapped balls!" + Style.RESET_ALL)
+    elif opponent_move == "swap" and opponent_ball == "purple":
+      temp_ball = player_ball
+      player_ball = opponent_ball
+      opponent_ball = temp_ball
+      print(Fore.MAGENTA + "Opponent swapped balls!" + Style.RESET_ALL)
+    elif player_move == "shadow" and player_ball == "gray":  # Summon Shadow Clone
+      shadow_clone = ShadowClone()
+      shadow_clone_health = shadow_clone.health
+      print(Fore.LIGHTBLACK_EX + "A shadowy figure emerges beside you!" + Style.RESET_ALL)
+    else:
+      player_health -= opponent_damage
+      opponent_health -= player_damage
+
+    
+    if shadow_clone_health is not None:
+      if opponent_move == "attack":
+        shadow_clone_health -= opponent_damage
+        print(f"Shadow Clone takes {opponent_damage} damage.")
+
+    
+    if explosive_planted and player_health == 3:
+      opponent_health = detonate_explosive(opponent_health)
+      explosive_planted = False  # Reset explosive state
+    if explosive_planted and opponent_health == 3:
+      player_health = detonate_explosive(player_health)  # Detonate if opponent's health is 3
+      explosive_planted = False
+
+   
+    if enrage_timer > 0:
+      enrage_timer -= 1
+
+    
+    if shadow_clone_health is not None and shadow_clone_health == 0:
+      print(Fore.GRAY + "Your Shadow Clone has faded!" + Style.RESET_ALL)
+      if damage_to_transfer is not None:
+        player_health -= damage_to_transfer # Apply damage to player
+        damage_to_transfer = None # Reset damage_to_transfer
+      shadow_clone_health = None # Reset shadow clone health
+
+   
+    if player_health <= 0:
+      print("\nYou lost!")
+      return
+    elif opponent_health <= 0:
+      print("\nYou defeated the first opponent! Now facing the BOSS!")
+      # **BOSS FIGHT START**
+      player_health = 10  # Reset player health for the boss fight
+      opponent_health = 25  # Set boss health
+      break
+
+  # boss hahehaheugh
+  for round_num in range(1, 21):
+    print(f"\nRound {round_num}")
+    print(f"Your health: {player_health}")
+    print(f"Boss health: {opponent_health}")
+    if shadow_clone_health is not None:
+      print(f"Shadow Clone health: {shadow_clone_health}")
+
+    # player turn
+    player_move = get_player_move(player_ball)
+    print(f"You chose {player_move}") # Removed the duplicate print
+
+    # boss turn
+    opponent_move = get_opponent_move(opponent_ball, player_ball)  
+    print(f"Boss chose {opponent_move}")
+
+    # calc damag
+    player_damage = calculate_damage(player_move, opponent_move, player_ball, player_enraged, shadow_clone)
+    opponent_damage = calculate_damage(opponent_move, player_move, opponent_ball, opponent_enraged)
+
+    if player_move == "parry" and opponent_move == "attack":
+      opponent_health -= opponent_damage
+      print("You parried the attack and the boss damaged themselves!")
+    elif opponent_move == "parry" and player_move == "attack":
+      player_health -= player_damage
+      print("Boss parried your attack and you damaged yourself!")
+    elif player_move == "heal" and player_health < 10:
+      player_health += 1
+      print("You healed yourself!")
+    elif opponent_move == "heal" and opponent_health < 25:
+      opponent_health += 1
+      print("Boss healed themselves!")
+    elif player_move == "enrage":
+      player_enraged = True
+      player_health -= 1
+      print("You are enraged!")
+      enrage_timer = 2  # Reset enrage timer
+    elif opponent_move == "enrage":
+      opponent_enraged = True
+      opponent_health -= 1
+      print("Boss is enraged!")
+      enrage_timer = 2  # Reset enrage timer
+    elif player_move == "detonate" and player_ball == "orange":  # Plant the explosive
+      explosive_planted = True
+      print(Fore.YELLOW + "You planted the detonatable explosive!" + Style.RESET_ALL)
+    elif opponent_move == "detonate" and opponent_ball == "orange":  # Plant the explosive
+      explosive_planted = True
+      print(Fore.YELLOW + "Boss planted a detonatable explosive!" + Style.RESET_ALL)
+    elif player_move == "swap" and player_ball == "purple":  # Swap balls
+      temp_ball = player_ball
+      player_ball = opponent_ball
+      opponent_ball = temp_ball
+      print(Fore.MAGENTA + "You swapped balls!" + Style.RESET_ALL)
+    elif opponent_move == "swap" and opponent_ball == "purple":
+      temp_ball = player_ball
+      player_ball = opponent_ball
+      opponent_ball = temp_ball
+      print(Fore.MAGENTA + "Boss swapped balls!" + Style.RESET_ALL)
+    elif player_move == "shadow" and player_ball == "gray":  # Summon Shadow Clone
+      shadow_clone = ShadowClone()
+      shadow_clone_health = shadow_clone.health
+      print(Fore.LIGHTBLACK_EX + "A shadowy figure emerges beside you!" + Style.RESET_ALL)
+    else:
+      player_health -= opponent_damage
+      opponent_health -= player_damage
+
+   
+    if shadow_clone_health is not None:
+      if opponent_move == "attack":
+        shadow_clone_health -= opponent_damage
+        print(f"Shadow Clone takes {opponent_damage} damage.")
+
+    
+    if explosive_planted and player_health == 3:
+      opponent_health = detonate_explosive(opponent_health)
+      explosive_planted = False  # Reset explosive state
+    if explosive_planted and opponent_health == 3:
+      player_health = detonate_explosive(player_health)  # Detonate if opponent's health is 3
+      explosive_planted = False
+
+   
+    if enrage_timer > 0:
+      enrage_timer -= 1
+
+    if shadow_clone_health is not None and shadow_clone_health == 0:
+      print(Fore.GRAY + "Your Shadow Clone has faded!" + Style.RESET_ALL)
+      if damage_to_transfer is not None:
+        player_health -= damage_to_transfer # Apply damage to player
+        damage_to_transfer = None # Reset damage_to_transfer
+      shadow_clone_health = None # Reset shadow clone health
+
+   
+    if player_health <= 0:
+      print("\nYou lost!")
+      return
+    elif opponent_health <= 0:
+      print("\nYou defeated the BOSS! You WIN!")
+      return
+
+  # Game ends in a draw
+  print("\nThe game is a draw!")
+
+# Start the game
+play_game()
